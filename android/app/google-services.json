@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "585512451263",
+    "project_id": "ucspin-9684c",
+    "storage_bucket": "ucspin-9684c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:585512451263:android:11e55b5a32ae1c5a389a0a",
+        "android_client_info": {
+          "package_name": "com.app.ucspin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "585512451263-lflapfginsis0e5pbt04qfmgfofd3p22.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvxk05wmrQRtp8ZPD5GKTEgDFcV3Aq9_A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "585512451263-lflapfginsis0e5pbt04qfmgfofd3p22.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
