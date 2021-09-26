@@ -18,6 +18,7 @@ void main() async {
   // print("881D2952974C62FE3AE532A64667B30C ${androidDeviceInfo.}");
   // This is my device id. Ad yours here
   MobileAds.setTestDeviceIds(["881D2952974C62FE3AE532A64667B30C"]);
+  MobileAds.setTestDeviceIds(["CEE8BA817E607D2669DE68E7C1D513CA"]);
   runApp(MyApp());
 }
 
