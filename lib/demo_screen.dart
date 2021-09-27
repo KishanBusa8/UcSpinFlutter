@@ -473,12 +473,12 @@ class _DemoScreenState extends State<DemoScreen> {
                           isSpin = true;
                           if (!interstitialVideoAd.isAvailable)
                             await interstitialVideoAd.load(
-                              unitId: MobileAds.interstitialAdVideoTestUnitId,
+                              unitId: AdMob().getVideoAdUnitId(),
                             );
                           if (interstitialVideoAd.isAvailable) {
                             await interstitialVideoAd.show();
                             interstitialVideoAd.load(
-                              unitId: MobileAds.interstitialAdVideoTestUnitId,
+                              unitId: AdMob().getVideoAdUnitId(),
                             );
                           }
 
@@ -490,12 +490,12 @@ class _DemoScreenState extends State<DemoScreen> {
                           isSpin = true;
                           if (!interstitialVideoAd.isAvailable)
                             await interstitialVideoAd.load(
-                              unitId: MobileAds.interstitialAdVideoTestUnitId,
+                              unitId: AdMob().getVideoAdUnitId(),
                             );
                           if (interstitialVideoAd.isAvailable) {
                             await interstitialVideoAd.show();
                             interstitialVideoAd.load(
-                              unitId: MobileAds.interstitialAdVideoTestUnitId,
+                              unitId: AdMob().getVideoAdUnitId(),
                             );
                           }
 
@@ -505,12 +505,12 @@ class _DemoScreenState extends State<DemoScreen> {
                           isSpin = true;
                           if (!interstitialVideoAd.isAvailable)
                             await interstitialVideoAd.load(
-                              unitId: MobileAds.interstitialAdVideoTestUnitId,
+                              unitId: AdMob().getVideoAdUnitId(),
                             );
                           if (interstitialVideoAd.isAvailable) {
                             await interstitialVideoAd.show();
                             interstitialVideoAd.load(
-                              unitId: MobileAds.interstitialAdVideoTestUnitId,
+                              unitId: AdMob().getVideoAdUnitId(),
                             );
                           }
 
@@ -544,6 +544,7 @@ class _DemoScreenState extends State<DemoScreen> {
                           onAnimationEnd: () async {
                            showResult = true;
                            totalSpin = totalSpin - 1;
+                           isSpin = false;
                            DateTime startDate = await NTP.now();
                            var documentReference = FirebaseFirestore.instance
                                .collection('Users')
@@ -568,8 +569,8 @@ class _DemoScreenState extends State<DemoScreen> {
                                });
                              });
                            }
-                           isSpin = false;
-                           setState(() {});                            },
+                           setState(() {});
+                           },
 
                           indicators: [
                             FortuneIndicator(
