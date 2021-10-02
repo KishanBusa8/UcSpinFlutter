@@ -79,9 +79,6 @@ class _InitialPageState extends State<InitialPage> {
     if (data!['spinUpdatedTime'] != null) {
       DateTime lastTime =  DateTime.fromMillisecondsSinceEpoch(int.parse(data['spinUpdatedTime']));
       DateTime startDate = await NTP.now();
-      var dif = startDate.difference(lastTime).isNegative;
-      print("::::::::: $dif");
-
       if (startDate.day != lastTime.day) {
         await secureStorage.write(key: 'totalSpin', value: '10');
         FirebaseFirestore.instance.runTransaction((transaction) async {

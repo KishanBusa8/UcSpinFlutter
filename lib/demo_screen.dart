@@ -86,6 +86,34 @@ class _DemoScreenState extends State<DemoScreen> {
           interstitialVideoAd.load();
           // Do not show an ad here
           break;
+        case FullScreenAdEvent.loadFailed:
+          if (getFreeUc) {
+            getFreeUcSPin();
+          }
+          if (dailyReward) {
+            getDailyReward();
+          }
+          if (isSpin) {
+            onSpin();
+          }
+          // Here is a handy place to load a new interstitial after displaying the previous one
+          interstitialVideoAd.load();
+          // Do not show an ad here
+          break;
+        case FullScreenAdEvent.showFailed:
+          if (getFreeUc) {
+            getFreeUcSPin();
+          }
+          if (dailyReward) {
+            getDailyReward();
+          }
+          if (isSpin) {
+            onSpin();
+          }
+          // Here is a handy place to load a new interstitial after displaying the previous one
+          interstitialVideoAd.load();
+          // Do not show an ad here
+          break;
         default:
           break;
       }
@@ -107,6 +135,34 @@ class _DemoScreenState extends State<DemoScreen> {
       final event = e.keys.first;
       switch (event) {
         case RewardedAdEvent.closed:
+        // Here is a handy place to load a new interstitial after displaying the previous one
+          if (getFreeUc) {
+            getFreeUcSPin();
+          }
+          if (dailyReward) {
+            getDailyReward();
+          }
+          if (isSpin) {
+            onSpin();
+          }
+          rewardedInterstitial.load();
+          // Do not show an ad here
+          break;
+        case RewardedAdEvent.loadFailed:
+        // Here is a handy place to load a new interstitial after displaying the previous one
+          if (getFreeUc) {
+            getFreeUcSPin();
+          }
+          if (dailyReward) {
+            getDailyReward();
+          }
+          if (isSpin) {
+            onSpin();
+          }
+          rewardedInterstitial.load();
+          // Do not show an ad here
+          break;
+        case RewardedAdEvent.showFailed:
         // Here is a handy place to load a new interstitial after displaying the previous one
           if (getFreeUc) {
             getFreeUcSPin();
