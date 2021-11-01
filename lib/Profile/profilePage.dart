@@ -11,6 +11,8 @@ import 'package:ucspin/Profile/redeem.dart';
 import 'package:ucspin/components/Admob.dart';
 import 'package:ucspin/components/customWidgets.dart';
 import 'package:ucspin/env.dart';
+import 'package:facebook_audience_network/ad/ad_banner.dart' as fb;
+
 
 
 class ProfilePage extends StatefulWidget {
@@ -32,11 +34,34 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController?  _emailController =  TextEditingController();
   TextEditingController?  _checkPasswordController =  TextEditingController();
   AdMob adMob = AdMob();
+  bool admobBanner = false;
+  final bannerController = BannerAdController();
 
   String? pubgId;
   @override
   void initState() {
-
+    bannerController.onEvent.listen((e) {
+      final event = e.keys.first;
+      // final info = e.values.first;
+      switch (event) {
+        case BannerAdEvent.loaded:
+          admobBanner = true;
+          setState(() {
+          });
+          break;
+        case BannerAdEvent.loadFailed:
+          admobBanner = false;
+          setState(() {
+          });
+          break;
+        default:
+          admobBanner = false;
+          setState(() {
+          });
+          break;
+      }
+    });
+    bannerController.load();
     getId();
     super.initState();
   }
@@ -49,11 +74,49 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
+
+  @override
+  void dispose() {
+    bannerController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         key: _scaffoldKey,
         backgroundColor: Colors.black,
+        bottomNavigationBar: admobBanner ? Container(child:BannerAd(
+          unitId: AdMob().getBannerAdUnitId(),
+          controller: bannerController,
+          builder: (context, child) {
+            return Container(
+              color: Colors.black,
+              child: child,
+            );
+          },
+          loading: Text('loading'),
+          error: Text('error'),
+          size: BannerSize.ADAPTIVE,
+        ),) :  fb.FacebookBannerAd(
+          placementId: AdMob().getFacebookBannerAd(),
+          bannerSize: fb.BannerSize.MEDIUM_RECTANGLE,
+          listener: (result, value) {
+            switch (result) {
+              case fb.BannerAdResult.ERROR:
+                print("Error: $value");
+                break;
+              case fb.BannerAdResult.LOADED:
+                print("Loaded: $value");
+                break;
+              case fb.BannerAdResult.CLICKED:
+                print("Clicked: $value");
+                break;
+              case fb.BannerAdResult.LOGGING_IMPRESSION:
+                print("Logging Impression: $value");
+                break;
+            }
+          },
+        ),
         body: SafeArea(
             child:Container(
               margin: EdgeInsets.only(top: 30),
@@ -285,20 +348,20 @@ class _ProfilePageState extends State<ProfilePage> {
                         ) : Container();}) : Container(),
 
 
-                  Flexible(child: Container(
-                    alignment: Alignment.bottomCenter,
-                    child:BannerAd(
-                    unitId: AdMob().getBannerAdUnitId(),
-                    builder: (context, child) {
-                      return Container(
-                        color: Colors.black,
-                        child: child,
-                      );
-                    },
-                    loading: Text('loading'),
-                    error: Text('error'),
-                    size: BannerSize.ADAPTIVE,
-                  ),))
+                  // Flexible(child: Container(
+                  //   alignment: Alignment.bottomCenter,
+                  //   child:BannerAd(
+                  //   unitId: AdMob().getBannerAdUnitId(),
+                  //   builder: (context, child) {
+                  //     return Container(
+                  //       color: Colors.black,
+                  //       child: child,
+                  //     );
+                  //   },
+                  //   loading: Text('loading'),
+                  //   error: Text('error'),
+                  //   size: BannerSize.ADAPTIVE,
+                  // ),))
 
                 ],
               ),

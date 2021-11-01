@@ -5,6 +5,9 @@ import 'dart:math';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:confetti/confetti.dart';
+import 'package:facebook_audience_network/ad/ad_banner.dart' as fb;
+import 'package:facebook_audience_network/ad/ad_interstitial.dart';
+import 'package:facebook_audience_network/ad/ad_rewarded.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +17,8 @@ import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:native_admob_flutter/native_admob_flutter.dart';
-// import 'package:native_admob_flutter/native_admob_flutter.dart';
 import 'package:ntp/ntp.dart';
+import 'package:scratcher/scratcher.dart';
 import 'package:show_up_animation/show_up_animation.dart';
 import 'package:ucspin/Profile/profilePage.dart';
 import 'package:ucspin/components/Admob.dart';
@@ -42,13 +45,15 @@ class _DemoScreenState extends State<DemoScreen> {
     ..load(unitId: AdMob().getVideoAdUnitId());
 
   final rewardedAd = RewardedAd(unitId: AdMob().getRewardBasedVideoAdUnitId())..load();
+  final bannerController = BannerAdController();
 
   final AppOpenAd appOpenAd = AppOpenAd()..load();
-  final rewardedInterstitial = RewardedInterstitialAd(unitId: AdMob().getRewardBasedVideoAdUnitId())..load();
+  final rewardedInterstitial = RewardedInterstitialAd(unitId: AdMob().getRewardBasedVideoAdUnitId());
   var pubgId;
   int totalSpin = 0;
   AdMob adMob = AdMob();
 
+  bool _isInterstitialAdLoaded = false;
 
    double height = 20.0;
    double width = 20.0;
@@ -56,11 +61,13 @@ class _DemoScreenState extends State<DemoScreen> {
    bool dailyReward = false;
    bool isSpin = false;
 
-
+  List coins = [1,2,3,4,5,6,7,8,9,10,0];
+  final scratchKey = GlobalKey<ScratcherState>();
+  bool admobBanner = false;
 
   @override
   void dispose() {
-    // bannerController.dispose();
+    bannerController.dispose();
     _controllerCenter.dispose();
     selected.close();
     super.dispose();
@@ -68,48 +75,76 @@ class _DemoScreenState extends State<DemoScreen> {
 
   @override
   void initState() {
+    _loadInterstitialAd();
+
+    bannerController.onEvent.listen((e) {
+      final event = e.keys.first;
+      // final info = e.values.first;
+      switch (event) {
+        case BannerAdEvent.loaded:
+          admobBanner = true;
+          setState(() {
+          });
+          break;
+        case BannerAdEvent.loadFailed:
+          admobBanner = false;
+          setState(() {
+          });
+          break;
+        default:
+          admobBanner = false;
+          setState(() {
+          });
+          break;
+      }
+    });
+    bannerController.load();
+
+
+
     if (!interstitialVideoAd.isLoaded) interstitialVideoAd.load();
     interstitialVideoAd.onEvent.listen((e) {
       final event = e.keys.first;
       switch (event) {
         case FullScreenAdEvent.closed:
-          if (getFreeUc) {
-            getFreeUcSPin();
-          }
-          if (dailyReward) {
-            getDailyReward();
-          }
-          if (isSpin) {
-            onSpin();
-          }
+          // if (getFreeUc) {
+          //   getFreeUcSPin();
+          // }
+          // if (dailyReward) {
+          //   getDailyReward();
+          // }
+          // if (isSpin) {
+          //   onSpin();
+          // }
         // Here is a handy place to load a new interstitial after displaying the previous one
           interstitialVideoAd.load();
           // Do not show an ad here
           break;
         case FullScreenAdEvent.loadFailed:
-          if (getFreeUc) {
-            getFreeUcSPin();
-          }
-          if (dailyReward) {
-            getDailyReward();
-          }
-          if (isSpin) {
-            onSpin();
-          }
+          // if (getFreeUc) {
+          //   getFreeUcSPin();
+          // }
+          // if (dailyReward) {
+          //   getDailyReward();
+          // }
+          // if (isSpin) {
+          //   onSpin();
+          // }
           // Here is a handy place to load a new interstitial after displaying the previous one
           interstitialVideoAd.load();
           // Do not show an ad here
           break;
         case FullScreenAdEvent.showFailed:
-          if (getFreeUc) {
-            getFreeUcSPin();
-          }
-          if (dailyReward) {
-            getDailyReward();
-          }
-          if (isSpin) {
-            onSpin();
-          }
+          // if (getFreeUc) {
+          //   getFreeUcSPin();
+          // }
+          // if (dailyReward) {
+          //   getDailyReward();
+          // }
+          // if (isSpin) {
+          //   onSpin();
+          // }
+          _showInterstitialAd();
           // Here is a handy place to load a new interstitial after displaying the previous one
           interstitialVideoAd.load();
           // Do not show an ad here
@@ -136,43 +171,44 @@ class _DemoScreenState extends State<DemoScreen> {
       switch (event) {
         case RewardedAdEvent.closed:
         // Here is a handy place to load a new interstitial after displaying the previous one
-          if (getFreeUc) {
-            getFreeUcSPin();
-          }
-          if (dailyReward) {
-            getDailyReward();
-          }
-          if (isSpin) {
-            onSpin();
-          }
+        //   if (getFreeUc) {
+        //     getFreeUcSPin();
+        //   }
+        //   if (dailyReward) {
+        //     getDailyReward();
+        //   }
+        //   if (isSpin) {
+        //     onSpin();
+        //   }
           rewardedInterstitial.load();
           // Do not show an ad here
           break;
         case RewardedAdEvent.loadFailed:
         // Here is a handy place to load a new interstitial after displaying the previous one
-          if (getFreeUc) {
-            getFreeUcSPin();
-          }
-          if (dailyReward) {
-            getDailyReward();
-          }
-          if (isSpin) {
-            onSpin();
-          }
+        //   if (getFreeUc) {
+        //     getFreeUcSPin();
+        //   }
+        //   if (dailyReward) {
+        //     getDailyReward();
+        //   }
+        //   if (isSpin) {
+        //     onSpin();
+        //   }
           rewardedInterstitial.load();
           // Do not show an ad here
           break;
         case RewardedAdEvent.showFailed:
         // Here is a handy place to load a new interstitial after displaying the previous one
-          if (getFreeUc) {
-            getFreeUcSPin();
-          }
-          if (dailyReward) {
-            getDailyReward();
-          }
-          if (isSpin) {
-            onSpin();
-          }
+        //   if (getFreeUc) {
+        //     getFreeUcSPin();
+        //   }
+        //   if (dailyReward) {
+        //     getDailyReward();
+        //   }
+        //   if (isSpin) {
+        //     onSpin();
+        //   }
+          _showInterstitialAd();
           rewardedInterstitial.load();
           // Do not show an ad here
           break;
@@ -193,6 +229,31 @@ class _DemoScreenState extends State<DemoScreen> {
     super.initState();
   }
 
+  _showInterstitialAd() {
+    if (_isInterstitialAdLoaded == true)
+      FacebookRewardedVideoAd.showRewardedVideoAd();
+    else
+      print("Interstial Ad not yet loaded!");
+  }
+
+  void _loadInterstitialAd() {
+    FacebookRewardedVideoAd.loadRewardedVideoAd(
+      placementId: AdMob().getPlacementId(), //"IMG_16_9_APP_INSTALL#2312433698835503_2650502525028617" YOUR_PLACEMENT_ID
+      listener: (result, value) {
+        print(">> FAN > Interstitial Ad: $result --> $value");
+        if (result == RewardedVideoAdResult.LOADED)
+          _isInterstitialAdLoaded = true;
+
+        /// Once an Interstitial Ad has been dismissed and becomes invalidated,
+        /// load a fresh Ad by calling this function.
+        if (result == RewardedVideoAdResult.VIDEO_CLOSED ||
+            result == RewardedVideoAdResult.VIDEO_COMPLETE) {
+          _isInterstitialAdLoaded = false;
+          _loadInterstitialAd();
+        }
+      },
+    );
+  }
   getData() async {
     await secureStorage.write(key: 'app', value: 'user');
     var user = await secureStorage.read(key: 'user');
@@ -335,14 +396,15 @@ class _DemoScreenState extends State<DemoScreen> {
 
 
 
-
+int r =0;
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        bottomNavigationBar: Container(child:BannerAd(
-          unitId: adMob.getBannerAdUnitId(),
+        bottomNavigationBar: admobBanner ? Container(child:BannerAd(
+          unitId: AdMob().getBannerAdUnitId(),
+          controller: bannerController,
           builder: (context, child) {
             return Container(
               color: Colors.black,
@@ -352,134 +414,188 @@ class _DemoScreenState extends State<DemoScreen> {
           loading: Text('loading'),
           error: Text('error'),
           size: BannerSize.ADAPTIVE,
-        ),),
-        body: Container(
-          color: Colors.black,
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-            ShowUpAnimation(
-            delayStart: Duration(milliseconds: 100),
-          animationDuration: Duration(milliseconds: 800),
-          curve: Curves.decelerate,
-          direction: Direction.vertical,
-          offset: -0.9,
+        ),) :  fb.FacebookBannerAd(
+          placementId: AdMob().getFacebookBannerAd(),
+          bannerSize: fb.BannerSize.MEDIUM_RECTANGLE,
+          listener: (result, value) {
+            switch (result) {
+              case fb.BannerAdResult.ERROR:
+                print("Error: $value");
+                break;
+              case fb.BannerAdResult.LOADED:
+                print("Loaded: $value");
+                break;
+              case fb.BannerAdResult.CLICKED:
+                print("Clicked: $value");
+                break;
+              case fb.BannerAdResult.LOGGING_IMPRESSION:
+                print("Logging Impression: $value");
+                break;
+            }
+          },
+        ),
+        body: SingleChildScrollView(
           child: Container(
-                  alignment: Alignment.topRight,
-                  margin: EdgeInsets.only(right: 20,bottom: 30),
-                  child: IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => ProfilePage()),
-                      );
-                    },
-                    icon: Icon(Icons.account_circle,size: 40,),
-                    color: Colors.white,
-                  ),
-                ),
-                ),
-
-                pubgId != null ? StreamBuilder(
-                    stream: FirebaseFirestore.instance
-                        .collection('Users')
-                        .doc(pubgId)
-                        .snapshots(),
-                    builder: (context, snap) {
-                      var data;
-                      if (snap.hasData) {
-                        data = snap.data;
-                      }
-                      return snap.hasData
-                          ?
-                      ShowUpAnimation(
-                          delayStart: Duration(milliseconds: 100),
-                          animationDuration: Duration(milliseconds: 800),
-                          curve: Curves.decelerate,
-                          direction: Direction.horizontal,
-                          offset: -0.9,
-                          child:  Container(
-                          margin: EdgeInsets.only(left: 20,top: 0),
-                          child:Column(children:[
-                            Container(
-                              margin: EdgeInsets.only(bottom: 0),
-                              child: Text(
-                                'Current balance: ${data['currentUC']} Coins',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 22
-                                ),
-                              ),
-                            ),
-                          ])
-                      )) : Container();}) : Container(),
-          ShowUpAnimation(
-            delayStart: Duration(milliseconds: 100),
+            color: Colors.black,
+              padding: EdgeInsets.only(bottom: 30),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+              ShowUpAnimation(
+              delayStart: Duration(milliseconds: 100),
             animationDuration: Duration(milliseconds: 800),
             curve: Curves.decelerate,
-            direction: Direction.horizontal,
-            offset: 0.9,
-            child:
-                Container(
-                    margin: EdgeInsets.only(top: 10,right: 30),
-                    width: MediaQuery.of(context).size.width,
-                    child:Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children:[
-                      Container(
-                        margin: EdgeInsets.only(bottom: 0),
-                        child: Text(
-                          'spin left : $totalSpin',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontSize: 16
+            direction: Direction.vertical,
+            offset: -0.9,
+            child: Container(
+                    alignment: Alignment.topRight,
+                    margin: EdgeInsets.only(right: 20,bottom: 30),
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ProfilePage()),
+                        );
+                      },
+                      icon: Icon(Icons.account_circle,size: 40,),
+                      color: Colors.white,
+                    ),
+                  ),
+                  ),
+
+                  pubgId != null ? StreamBuilder(
+                      stream: FirebaseFirestore.instance
+                          .collection('Users')
+                          .doc(pubgId)
+                          .snapshots(),
+                      builder: (context, snap) {
+                        var data;
+                        if (snap.hasData) {
+                          data = snap.data;
+                        }
+                        return snap.hasData
+                            ?
+                        ShowUpAnimation(
+                            delayStart: Duration(milliseconds: 100),
+                            animationDuration: Duration(milliseconds: 800),
+                            curve: Curves.decelerate,
+                            direction: Direction.horizontal,
+                            offset: -0.9,
+                            child:  Container(
+                            margin: EdgeInsets.only(left: 20,top: 0),
+                            child:Column(children:[
+                              Container(
+                                margin: EdgeInsets.only(bottom: 0),
+                                child: Text(
+                                  'Current balance: ${data['currentUC']} Coins',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      fontSize: 22
+                                  ),
+                                ),
+                              ),
+                            ])
+                        )) : Container();}) : Container(),
+            ShowUpAnimation(
+              delayStart: Duration(milliseconds: 100),
+              animationDuration: Duration(milliseconds: 800),
+              curve: Curves.decelerate,
+              direction: Direction.horizontal,
+              offset: 0.9,
+              child:
+                  Container(
+                      margin: EdgeInsets.only(top: 10,right: 30),
+                      width: MediaQuery.of(context).size.width,
+                      child:Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children:[
+                        Container(
+                          margin: EdgeInsets.only(bottom: 0),
+                          child: Text(
+                            'spin left : $totalSpin',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                fontSize: 16
+                            ),
                           ),
                         ),
-                      ),
-                    ])
-                ),
-                ),
-                SizedBox(height: 5,),
-                Divider(color: Colors.white,),
-                ShowUpAnimation(
-                  delayStart: Duration(milliseconds: 500),
-                  animationDuration: Duration(milliseconds: 800),
-                  curve: Curves.decelerate,
-                  direction: Direction.horizontal,
-                  offset: 0.9,
-                  child: Container(
-                    width: MediaQuery.of(context).size.width,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          child: ElevatedButton(
+                      ])
+                  ),
+                  ),
+                  SizedBox(height: 5,),
+                  Divider(color: Colors.white,),
+                  ShowUpAnimation(
+                    delayStart: Duration(milliseconds: 500),
+                    animationDuration: Duration(milliseconds: 800),
+                    curve: Curves.decelerate,
+                    direction: Direction.horizontal,
+                    offset: 0.9,
+                    child: Container(
+                      width: MediaQuery.of(context).size.width,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            child: ElevatedButton(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.celebration,color: Colors.black,),
+                                    SizedBox(width: 10,),
+                                    Text('Get Free Spin',style: TextStyle(color: Colors.black),)
+                                  ],
+                                ),
+                                onPressed: () async {
+                                  getFreeUc = true;
+                                  getFreeUcSPin();
+                                  if (!interstitialVideoAd.isAvailable) {
+                                    await interstitialVideoAd.load(
+                                      unitId: AdMob().getVideoAdUnitId(),
+                                    );
+                                    _showInterstitialAd();
+                                  } else if (interstitialVideoAd.isAvailable){
+                                    await interstitialVideoAd.show();
+                                    interstitialVideoAd.load(
+                                      unitId: AdMob().getVideoAdUnitId(),
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                    primary: Colors.amber,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12), // <-- Radius
+                                    ),
+                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                                    textStyle: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold))),
+                          ),
+                          ElevatedButton(
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(Icons.celebration,color: Colors.black,),
                                   SizedBox(width: 10,),
-                                  Text('Get Free Spin',style: TextStyle(color: Colors.black),)
+                                  Text('DAILY REWARD',style: TextStyle(color: Colors.black),)
                                 ],
                               ),
                               onPressed: () async {
-                                getFreeUc = true;
-                                if (!interstitialVideoAd.isAvailable)
-                                  await interstitialVideoAd.load(
-                                    unitId: AdMob().getVideoAdUnitId(),
-                                  );
-                                if (interstitialVideoAd.isAvailable) {
-                                  await interstitialVideoAd.show();
-                                  interstitialVideoAd.load(
-                                    unitId: AdMob().getVideoAdUnitId(),
-                                  );
+                                dailyReward = true;
+                                getDailyReward();
+                                if (!rewardedInterstitial.isAvailable) {
+                                  _showInterstitialAd();
+                                  await rewardedInterstitial.load();
+                                } else if (rewardedInterstitial.isAvailable) {
+                                  await rewardedInterstitial.show();
+                                  rewardedInterstitial.load();
                                 }
+
                               },
                               style: ElevatedButton.styleFrom(
                                   primary: Colors.amber,
@@ -490,233 +606,329 @@ class _DemoScreenState extends State<DemoScreen> {
                                   textStyle: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold))),
-                        ),
-                        ElevatedButton(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.celebration,color: Colors.black,),
-                                SizedBox(width: 10,),
-                                Text('DAILY REWARD',style: TextStyle(color: Colors.black),)
-                              ],
-                            ),
-                            onPressed: () async {
-                              dailyReward = true;
-                              if (!rewardedInterstitial.isAvailable)
-                                await rewardedInterstitial.load();
-                              await rewardedInterstitial.show();
-                              rewardedInterstitial.load();
-                            },
-                            style: ElevatedButton.styleFrom(
-                                primary: Colors.amber,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12), // <-- Radius
-                                ),
-                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                                textStyle: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold))),
 
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                  ElevatedButton(
+                      child: Text('Scratch and win',style: TextStyle(color: Colors.black),),
+                      onPressed: () async {
+                        Random rnd;
+                        int min = 0;
+                        int max = 10;
+                        rnd = new Random();
+                        r = min + rnd.nextInt(max - min);
 
-                SizedBox(height: 80,),
-                    GestureDetector(
-                      onTap: () async {
+                        if (!interstitialVideoAd.isAvailable) {
+                          _showInterstitialAd();
+                          await interstitialVideoAd.load(
+                            unitId: AdMob().getVideoAdUnitId(),
+                          );
+                        }
 
-                          isSpin = true;
-                          if (!interstitialVideoAd.isAvailable)
-                            await interstitialVideoAd.load(
-                              unitId: AdMob().getVideoAdUnitId(),
-                            );
-                          if (interstitialVideoAd.isAvailable) {
-                            await interstitialVideoAd.show();
-                            interstitialVideoAd.load(
-                              unitId: AdMob().getVideoAdUnitId(),
-                            );
-                          }
-
-
-
-                      },
-                      onHorizontalDragEnd: (details) async {
-
-                          isSpin = true;
-                          if (!interstitialVideoAd.isAvailable)
-                            await interstitialVideoAd.load(
-                              unitId: AdMob().getVideoAdUnitId(),
-                            );
-                          if (interstitialVideoAd.isAvailable) {
-                            await interstitialVideoAd.show();
-                            interstitialVideoAd.load(
-                              unitId: AdMob().getVideoAdUnitId(),
-                            );
-                          }
-
-                    },
-                      onVerticalDragEnd: (details) async {
-
-                          isSpin = true;
-                          if (!interstitialVideoAd.isAvailable)
-                            await interstitialVideoAd.load(
-                              unitId: AdMob().getVideoAdUnitId(),
-                            );
-                          if (interstitialVideoAd.isAvailable) {
-                            await interstitialVideoAd.show();
-                            interstitialVideoAd.load(
-                              unitId: AdMob().getVideoAdUnitId(),
-                            );
-                          }
-
-                      },
-                      behavior: HitTestBehavior.translucent,
-                      child:
-                      AnimatedContainer(
-                        padding: EdgeInsets.all(5),
-                        duration: Duration(milliseconds: 500),
-                        decoration :BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.amberAccent.withOpacity(0.7),
-                              spreadRadius: 5,
-                              blurRadius: 100,
-                              offset: Offset(0, 0), // changes position of shadow
-                            ),
-                          ],
-                        ),
-                        width: width,
-                        height: height,
-                        child: FortuneWheel(
-                          selected: selected.stream,
-                          duration: Duration(seconds: 8),
-                          onFling: () {},
-                          animateFirst: false,
-                          curve: Curves.linearToEaseOut,
-                          rotationCount: 18,
-                          styleStrategy: AlternatingStyleStrategy(),
-                          onAnimationEnd: () async {
-                           showResult = true;
-                           totalSpin = totalSpin - 1;
-                           isSpin = false;
-                           DateTime startDate = await NTP.now();
-                           var documentReference = FirebaseFirestore.instance
-                               .collection('Users')
-                               .doc(pubgId);
-                           FirebaseFirestore.instance.runTransaction((transaction) async {
-                             transaction.update(
-                               documentReference,
-                               {
-                                 'dailySpin' : totalSpin,
-                                 'spinUpdatedTime': startDate.millisecondsSinceEpoch.toString(),
-                               },
-                             );
-                           });
-                           if (items[random]['text'] != 'egg') {
-                             _controllerCenter.play();
-                             DocumentSnapshot documentSnapshot = await documentReference.get();
-                             var data = documentSnapshot.data();
-                             var uc =  data!['currentUC'] + int.parse(items[random]['text']);
-                             FirebaseFirestore.instance.runTransaction((transaction) async {
-                               transaction.update(documentReference, {
-                                 'currentUC' : uc,
-                               });
-                             });
-                           }
-                           setState(() {});
-                           },
-
-                          indicators: [
-                            FortuneIndicator(
-                                child: Image.asset(
-                                  'assets/indicator.png',
-                                  height: 50,
-                                  color: Colors.black,
-                                )),
-                          ],
-                          items: List.generate(items.length, (index) => FortuneItem(
-
-                              child: items[index]['text'] == 'egg' ? Container(
-                                height: 50,
-                                width: 50,
-                                margin: EdgeInsets.only(left: 30),
-                                alignment: Alignment.center,
-                                child: Image.asset('assets/egg.png'),
-                              ) :  Container(
-                                margin: EdgeInsets.only(left: 30),
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white,width: 5),
-                                    color: Colors.red.withOpacity(0.5)),
-
-                                child: Text(
-                                  items[index]['text'],
-                                  style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold),
+                        if (interstitialVideoAd.isAvailable) {
+                          await interstitialVideoAd.show();
+                          interstitialVideoAd.load(
+                            unitId: AdMob().getVideoAdUnitId(),
+                          );
+                        }
+                        showAnimatedDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          builder: (BuildContext context) {
+                            return WillPopScope(
+                                onWillPop: () {
+                              scratchKey.currentState!.reset(duration: Duration(milliseconds: 100));
+                              return Future.value(true);
+                            },
+                            child: CustomDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20), // <-- Radius
+                              ),
+                              child: Container(
+                                height: 300,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Scratcher(
+                                      key: scratchKey,
+                                      brushSize: 20,
+                                      threshold: 70,
+                                      color: Colors.grey,
+                                      onChange: (value) => print("Scratch progress: $value%"),
+                                      onThreshold: () async {
+                                        if (r > 0) {
+                                          showAnimatedDialog(
+                                            context: context,
+                                            barrierDismissible: true,
+                                            builder: (BuildContext context) {
+                                              return CustomDialog(
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(20), // <-- Radius
+                                                  ),
+                                                  child: Container(
+                                                    height: 220,
+                                                    child: Column(
+                                                      children: [
+                                                        Container(
+                                                          margin: EdgeInsets.only(top: 5),
+                                                          child: Image.asset('assets/giphy.gif'),
+                                                          height: 150,
+                                                          width: 150,
+                                                        ),
+                                                        Container(
+                                                          child: Text('Congratulations\nYou have won $r Coins' ,textAlign: TextAlign.center,style: TextStyle(color: Colors.deepOrange,fontSize: 18,fontWeight: FontWeight.bold),),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                              );
+                                            },
+                                            animationType: DialogTransitionType.scale,
+                                            curve: Curves.fastOutSlowIn,
+                                            duration: Duration(seconds: 1),
+                                          );
+                                          var documentReference = FirebaseFirestore.instance
+                                              .collection('Users')
+                                              .doc(pubgId);
+                                          DocumentSnapshot documentSnapshot = await documentReference.get();
+                                          var data = documentSnapshot.data();
+                                          var uc =  data!['currentUC'] + r;
+                                          FirebaseFirestore.instance.runTransaction((transaction) async {
+                                            transaction.update(documentReference, {
+                                              'currentUC' : uc,
+                                            });
+                                          });
+                                        }
+                                      },
+                                      child: Container(
+                                        height: 250,
+                                        width: 250,
+                                        alignment: Alignment.center,
+                                        child: Text(r > 0 ? "You win ${r} coins!" : "Opps! batter luck next time"),
+                                      ),
+                                    )
+                                  ],
                                 ),
                               ),
-                              style: FortuneItemStyle(color: items[index]['color'],borderColor: Colors.white,)
-                          ),),
+                              ),
+                            );
+                          },
+                          animationType: DialogTransitionType.scale,
+                          curve: Curves.fastOutSlowIn,
+                          duration: Duration(seconds: 1),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                          primary: Colors.amber,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12), // <-- Radius
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                          textStyle: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold))),
+                  SizedBox(height: 80,),
+                      GestureDetector(
+                        onTap: () async {
+                            isSpin = true;
+                            onSpin();
+                            if (!interstitialVideoAd.isAvailable) {
+                              await interstitialVideoAd.load(
+                                unitId: AdMob().getVideoAdUnitId(),
+                              );
+                              _showInterstitialAd();
+                            } else if (interstitialVideoAd.isAvailable){
+                              await interstitialVideoAd.show();
+                              interstitialVideoAd.load(
+                                unitId: AdMob().getVideoAdUnitId(),
+                              );
+                            }
+
+                        },
+                        onHorizontalDragEnd: (details) async {
+
+                            isSpin = true;
+                            onSpin();
+                            if (!interstitialVideoAd.isAvailable) {
+                              await interstitialVideoAd.load(
+                                unitId: AdMob().getVideoAdUnitId(),
+                              );
+                              _showInterstitialAd();
+                            } else if (interstitialVideoAd.isAvailable){
+                              await interstitialVideoAd.show();
+                              interstitialVideoAd.load(
+                                unitId: AdMob().getVideoAdUnitId(),
+                              );
+                            }
+
+                      },
+                        onVerticalDragEnd: (details) async {
+
+                            isSpin = true;
+                            onSpin();
+                            if (!interstitialVideoAd.isAvailable) {
+                              await interstitialVideoAd.load(
+                                unitId: AdMob().getVideoAdUnitId(),
+                              );
+                              _showInterstitialAd();
+                            } else if (interstitialVideoAd.isAvailable){
+                              await interstitialVideoAd.show();
+                              interstitialVideoAd.load(
+                                unitId: AdMob().getVideoAdUnitId(),
+                              );
+                            }
+
+                        },
+                        behavior: HitTestBehavior.translucent,
+                        child:
+                        AnimatedContainer(
+                          padding: EdgeInsets.all(5),
+                          duration: Duration(milliseconds: 500),
+                          decoration :BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.amberAccent.withOpacity(0.7),
+                                spreadRadius: 5,
+                                blurRadius: 100,
+                                offset: Offset(0, 0), // changes position of shadow
+                              ),
+                            ],
+                          ),
+                          width: width,
+                          height: height,
+                          child: FortuneWheel(
+                            selected: selected.stream,
+                            duration: Duration(seconds: 8),
+                            onFling: () {},
+                            animateFirst: false,
+                            curve: Curves.linearToEaseOut,
+                            rotationCount: 18,
+                            styleStrategy: AlternatingStyleStrategy(),
+                            onAnimationEnd: () async {
+                             showResult = true;
+                             totalSpin = totalSpin - 1;
+                             isSpin = false;
+                             DateTime startDate = await NTP.now();
+                             var documentReference = FirebaseFirestore.instance
+                                 .collection('Users')
+                                 .doc(pubgId);
+                             FirebaseFirestore.instance.runTransaction((transaction) async {
+                               transaction.update(
+                                 documentReference,
+                                 {
+                                   'dailySpin' : totalSpin,
+                                   'spinUpdatedTime': startDate.millisecondsSinceEpoch.toString(),
+                                 },
+                               );
+                             });
+                             if (items[random]['text'] != 'egg') {
+                               _controllerCenter.play();
+                               DocumentSnapshot documentSnapshot = await documentReference.get();
+                               var data = documentSnapshot.data();
+                               var uc =  data!['currentUC'] + int.parse(items[random]['text']);
+                               FirebaseFirestore.instance.runTransaction((transaction) async {
+                                 transaction.update(documentReference, {
+                                   'currentUC' : uc,
+                                 });
+                               });
+                             }
+                             setState(() {});
+                             },
+
+                            indicators: [
+                              FortuneIndicator(
+                                  child: Image.asset(
+                                    'assets/indicator.png',
+                                    height: 50,
+                                    color: Colors.black,
+                                  )),
+                            ],
+                            items: List.generate(items.length, (index) => FortuneItem(
+
+                                child: items[index]['text'] == 'egg' ? Container(
+                                  height: 50,
+                                  width: 50,
+                                  margin: EdgeInsets.only(left: 30),
+                                  alignment: Alignment.center,
+                                  child: Image.asset('assets/egg.png'),
+                                ) :  Container(
+                                  margin: EdgeInsets.only(left: 30),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white,width: 5),
+                                      color: Colors.red.withOpacity(0.5)),
+
+                                  child: Text(
+                                    items[index]['text'],
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                style: FortuneItemStyle(color: items[index]['color'],borderColor: Colors.white,)
+                            ),),
+                          ),
                         ),
                       ),
-                    ),
 
-                SizedBox(height: 70),
-                showResult ? items[random]['text'] == 'egg' ? Container(child: Text('Opps! Try Again',style:TextStyle(
-                  fontSize: 22.0,
-                  color: Colors.white,
-                  fontFamily: 'Horizon',
-                ),),) :  AnimatedTextKit(
-                  animatedTexts: [
-                    ColorizeAnimatedText(
-                   "Congrats, You have won ${items[random]['text'].toString()} Coins!",
-                      textStyle: TextStyle(
-                        fontSize: 22.0,
-                        fontFamily: 'Horizon',
+                  SizedBox(height: 70),
+                  showResult ? items[random]['text'] == 'egg' ? Container(child: Text('Opps! Try Again',style:TextStyle(
+                    fontSize: 22.0,
+                    color: Colors.white,
+                    fontFamily: 'Horizon',
+                  ),),) :  AnimatedTextKit(
+                    animatedTexts: [
+                      ColorizeAnimatedText(
+                     "Congrats, You have won ${items[random]['text'].toString()} Coins!",
+                        textStyle: TextStyle(
+                          fontSize: 22.0,
+                          fontFamily: 'Horizon',
+                        ),
+                        colors: [
+                          Colors.purple,
+                          Colors.blue,
+                          Colors.yellow,
+                          Colors.red,
+                        ],
                       ),
-                      colors: [
-                        Colors.purple,
+                    ],
+                    isRepeatingAnimation: true,
+                    repeatForever: true,
+                    onTap: () {
+                      print("Tap Event");
+                    },
+                  ) : Container(),
+
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child:  ConfettiWidget(
+                      confettiController: _controllerCenter,
+                      blastDirectionality: BlastDirectionality.directional,
+                      blastDirection: -pi / 2,
+                      particleDrag: 0.03,
+                      emissionFrequency: 0.03,
+                      numberOfParticles: 50,
+                      gravity: 0.03,
+                      shouldLoop: false,
+                      colors: const [
+                        Colors.green,
                         Colors.blue,
-                        Colors.yellow,
-                        Colors.red,
-                      ],
+                        Colors.pink,
+                        Colors.orange,
+                        Colors.purple
+                      ], // manually specify the colors to be used
                     ),
-                  ],
-                  isRepeatingAnimation: true,
-                  repeatForever: true,
-                  onTap: () {
-                    print("Tap Event");
-                  },
-                ) : Container(),
-
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child:  ConfettiWidget(
-                    confettiController: _controllerCenter,
-                    blastDirectionality: BlastDirectionality.directional,
-                    blastDirection: -pi / 2,
-                    particleDrag: 0.03,
-                    emissionFrequency: 0.03,
-                    numberOfParticles: 50,
-                    gravity: 0.03,
-                    shouldLoop: false,
-                    colors: const [
-                      Colors.green,
-                      Colors.blue,
-                      Colors.pink,
-                      Colors.orange,
-                      Colors.purple
-                    ], // manually specify the colors to be used
                   ),
-                ),
 
 
-              ],
+                ],
+            ),
           ),
         ),
       ),

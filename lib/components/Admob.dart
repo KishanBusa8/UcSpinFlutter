@@ -21,5 +21,12 @@ class AdMob {
     return 'ca-app-pub-6186670457750579/5136456899';
   }
 
+  String getFacebookBannerAd() {
+    return "844669249566233_862016941164797";
+  }
+
+  String getPlacementId() {
+    return '844669249566233_861981311168360';
+  }
 
 }

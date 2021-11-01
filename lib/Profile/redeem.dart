@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:facebook_audience_network/ad/ad_interstitial.dart';
+import 'package:facebook_audience_network/ad/ad_rewarded.dart';
 import 'package:firestore_ui/animated_firestore_list.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -11,7 +13,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:native_admob_flutter/native_admob_flutter.dart';
 import 'package:ucspin/components/Admob.dart';
-
+import 'package:facebook_audience_network/ad/ad_banner.dart' as fb;
 
 
 class RedeemPage extends StatefulWidget {
@@ -31,11 +33,39 @@ class _RedeemPageState extends State<RedeemPage> {
   String? pubgId;
   List withdrawalList = [60,300,360,600,960,1500,3000,6000];
   int? selectIndex;
+  final bannerController = BannerAdController();
 
   final AppOpenAd appOpenAd = AppOpenAd()..load();
   final interstitialVideoAd = InterstitialAd()
-    ..load(unitId: AdMob().getVideoAdUnitId());  @override
+    ..load(unitId: AdMob().getVideoAdUnitId());
+  bool admobBanner = false;
+  bool _isInterstitialAdLoaded = false;
+
+  @override
   void initState() {
+    _loadInterstitialAd();
+    bannerController.onEvent.listen((e) {
+      final event = e.keys.first;
+      // final info = e.values.first;
+      switch (event) {
+        case BannerAdEvent.loaded:
+          admobBanner = true;
+          setState(() {
+          });
+          break;
+        case BannerAdEvent.loadFailed:
+          admobBanner = false;
+          setState(() {
+          });
+          break;
+        default:
+          admobBanner = false;
+          setState(() {
+          });
+          break;
+      }
+    });
+    bannerController.load();
     if (!interstitialVideoAd.isLoaded) interstitialVideoAd.load();
     interstitialVideoAd.onEvent.listen((e) {
       final event = e.keys.first;
@@ -57,11 +87,12 @@ class _RedeemPageState extends State<RedeemPage> {
   getData () async {
     var rng = new Random();
     if (rng.nextInt(100) % 2 == 0) {
-      if (!interstitialVideoAd.isAvailable)
+      if (!interstitialVideoAd.isAvailable) {
         await interstitialVideoAd.load(
           unitId: AdMob().getVideoAdUnitId(),
         );
-      if (interstitialVideoAd.isAvailable) {
+        _showInterstitialAd();
+      } else if (interstitialVideoAd.isAvailable){
         await interstitialVideoAd.show();
         interstitialVideoAd.load(
           unitId: AdMob().getVideoAdUnitId(),
@@ -80,8 +111,31 @@ class _RedeemPageState extends State<RedeemPage> {
     setState(() {
     });
   }
+  _showInterstitialAd() {
+    if (_isInterstitialAdLoaded == true)
+      FacebookRewardedVideoAd.showRewardedVideoAd();
+    else
+      print("Interstial Ad not yet loaded!");
+  }
 
+  void _loadInterstitialAd() {
+    FacebookRewardedVideoAd.loadRewardedVideoAd(
+      placementId: AdMob().getPlacementId(), //"IMG_16_9_APP_INSTALL#2312433698835503_2650502525028617" YOUR_PLACEMENT_ID
+      listener: (result, value) {
+        print(">> FAN > Interstitial Ad: $result --> $value");
+        if (result == RewardedVideoAdResult.LOADED)
+          _isInterstitialAdLoaded = true;
 
+        /// Once an Interstitial Ad has been dismissed and becomes invalidated,
+        /// load a fresh Ad by calling this function.
+        if (result == RewardedVideoAdResult.VIDEO_CLOSED ||
+            result == RewardedVideoAdResult.VIDEO_COMPLETE) {
+          _isInterstitialAdLoaded = false;
+          _loadInterstitialAd();
+        }
+      },
+    );
+  }
   int convertCoinsIntoUc(int coins) {
      return coins * 750 ~/ 60;
   }
@@ -90,11 +144,17 @@ class _RedeemPageState extends State<RedeemPage> {
   }
 
   @override
+  void dispose() {
+    bannerController.dispose();
+    super.dispose();
+  }
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
         key: _scaffoldKey,
-        bottomNavigationBar: Container(child:BannerAd(
+        bottomNavigationBar: admobBanner ? Container(child:BannerAd(
           unitId: AdMob().getBannerAdUnitId(),
+          controller: bannerController,
           builder: (context, child) {
             return Container(
               color: Colors.black,
@@ -104,14 +164,34 @@ class _RedeemPageState extends State<RedeemPage> {
           loading: Text('loading'),
           error: Text('error'),
           size: BannerSize.ADAPTIVE,
-        ),),
+        ),) :  fb.FacebookBannerAd(
+          placementId: AdMob().getFacebookBannerAd(),
+          bannerSize: fb.BannerSize.MEDIUM_RECTANGLE,
+          listener: (result, value) {
+            switch (result) {
+              case fb.BannerAdResult.ERROR:
+                print("Error: $value");
+                break;
+              case fb.BannerAdResult.LOADED:
+                print("Loaded: $value");
+                break;
+              case fb.BannerAdResult.CLICKED:
+                print("Clicked: $value");
+                break;
+              case fb.BannerAdResult.LOGGING_IMPRESSION:
+                print("Logging Impression: $value");
+                break;
+            }
+          },
+        ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            if (!interstitialVideoAd.isAvailable)
+            if (!interstitialVideoAd.isAvailable) {
               await interstitialVideoAd.load(
                 unitId: AdMob().getVideoAdUnitId(),
               );
-            if (interstitialVideoAd.isAvailable) {
+              _showInterstitialAd();
+            } else if (interstitialVideoAd.isAvailable){
               await interstitialVideoAd.show();
               interstitialVideoAd.load(
                 unitId: AdMob().getVideoAdUnitId(),
